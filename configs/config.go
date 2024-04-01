@@ -149,7 +149,7 @@ func (c *Configs) GetSecurity() (map[string]Security, error) {
 		return securityList, err
 	}
 
-	fmt.Println("=======securityList=======", securityList)
+	fmt.Println("securityList", securityList)
 
 	return securityList, nil
 }
