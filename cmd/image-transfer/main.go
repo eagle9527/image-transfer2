@@ -54,6 +54,9 @@ func main() {
 		MaxAge:        12 * 3600,                                    // 预检请求的最大有效期（秒）
 	}))
 
+	// 提供静态文件服务
+	r.Static("/static", "./static") // 假设你的 HTML 文件存放在 ./static 目录下
+
 	r.POST("/image-transfer", func(c *gin.Context) {
 		var req ImageTransferRequest
 
@@ -98,6 +101,11 @@ func main() {
 		}()
 
 		c.JSON(http.StatusOK, gin.H{"message": "Image transfer executed successfully"})
+	})
+
+	// 设置路由以访问静态页面
+	r.GET("/", func(c *gin.Context) {
+		c.File("./static/index.html") // 假设你的 HTML 文件是 index.html
 	})
 
 	port := ":8080"

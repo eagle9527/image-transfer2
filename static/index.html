@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Transfer</title>
+    <style>
+        .image-pair {
+            margin-bottom: 10px;
+        }
+        #images {
+            width: 100%; /* 设置文本区域宽度为 100% */
+            max-width: 2000px; /* 可选：设置最大宽度 */
+            height: 400px; /* 设置高度 */
+        }
+    </style>
+</head>
+<body>
+    <h1>Image Transfer</h1>
+    <form id="transferForm">
+        <h3>Source:</h3>
+        <label for="sourceAddress">源地址:</label>
+        <input type="text" id="sourceAddress" placeholder="例如: registry.cn-hangzhou.aliyuncs.com" required><br>
+        <label for="sourceUsername">用户名:</label>
+        <input type="text" id="sourceUsername" required><br>
+        <label for="sourcePassword">密码:</label>
+        <input type="password" id="sourcePassword" required><br>
+        
+        <h3>Target:</h3>
+        <label for="targetAddress">目标地址:</label>
+        <input type="text" id="targetAddress" placeholder="例如: swr.cn-east-3.myhuaweicloud.com" required><br>
+        <label for="targetUsername">用户名:</label>
+        <input type="text" id="targetUsername" required><br>
+        <label for="targetPassword">密码:</label>
+        <input type="password" id="targetPassword" required><br>
+        
+        <h3>Images:</h3>
+        <textarea id="images" placeholder='输入格式：source_image:target_image，每对之间换行'></textarea><br>
+
+       <h3>返回信息:</h3>
+       <div id="response"></div>
+
+
+        <button type="submit">提交</button>
+    </form>
+
+    <script>
+        document.getElementById('transferForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const sourceAddress = document.getElementById('sourceAddress').value;
+            const sourceUsername = document.getElementById('sourceUsername').value;
+            const sourcePassword = document.getElementById('sourcePassword').value;
+            const targetAddress = document.getElementById('targetAddress').value;
+            const targetUsername = document.getElementById('targetUsername').value;
+            const targetPassword = document.getElementById('targetPassword').value;
+
+            const imagesText = document.getElementById('images').value;
+            const images = {};
+
+            // 处理文本区域输入的源镜像和目标镜像
+            imagesText.split('\n').forEach(line => {
+                const parts = line.split(':');
+                if (parts.length === 2) {
+                    const sourceImage = parts[0].trim();
+                    const targetImage = parts[1].trim();
+                    images[sourceImage] = targetImage;
+                }
+            });
+
+            const data = {
+                source: {
+                    [sourceAddress]: {
+                        username: sourceUsername,
+                        password: sourcePassword
+                    }
+                },
+                target: {
+                    [targetAddress]: {
+                        username: targetUsername,
+                        password: targetPassword
+                    }
+                },
+                images: images
+            };
+
+            fetch('http://localhost:8080/image-transfer', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('response').innerText = data.message;
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                document.getElementById('response').innerText = '请求失败: ' + error;
+            });
+        });
+    </script>
+</body>
+</html>
