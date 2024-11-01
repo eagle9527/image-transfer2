@@ -20,6 +20,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"os"
@@ -43,6 +44,15 @@ func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	r := gin.Default()
+
+	// 添加 CORS 中间件
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:  []string{"*"},                                // 允许所有域名
+		AllowMethods:  []string{"GET", "POST", "OPTIONS"},           // 允许的方法
+		AllowHeaders:  []string{"Origin", "Content-Type", "Accept"}, // 允许的请求头
+		ExposeHeaders: []string{"Content-Length"},                   // 允许暴露的头
+		MaxAge:        12 * 3600,                                    // 预检请求的最大有效期（秒）
+	}))
 
 	r.POST("/image-transfer", func(c *gin.Context) {
 		var req ImageTransferRequest

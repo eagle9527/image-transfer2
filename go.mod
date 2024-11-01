@@ -7,6 +7,7 @@ require (
 	github.com/containers/libtrust v0.0.0-20200511145503-9c3a6c22cd9a // indirect
 	github.com/docker/docker v1.13.1 // indirect
 	github.com/emicklei/go-restful v2.15.0+incompatible
+	github.com/gin-contrib/cors v1.7.2
 	github.com/gin-gonic/gin v1.10.0
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0
