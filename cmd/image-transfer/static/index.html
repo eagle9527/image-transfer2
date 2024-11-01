@@ -61,7 +61,6 @@
         // 处理文本区域输入的源镜像和目标镜像
         imagesText.split('\n').forEach(line => {
             const colonCount = (line.match(/:/g) || []).length;
-            console.log(`当前行冒号数量: ${colonCount}`); // 打印冒号数量
 
             if (colonCount === 1) {
                 const [sourceImage, targetImage] = line.split(':').map(part => part.trim());
@@ -115,7 +114,6 @@
                 document.getElementById('response').innerText = `[${currentTime}] ${data.message}`;
             })
             .catch((error) => {
-                console.error('Error:', error);
                 const currentTime = new Date().toLocaleString();
                 document.getElementById('response').innerText = `[${currentTime}] 请求失败: ${error}`;
             });
