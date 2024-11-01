@@ -76,11 +76,16 @@ func main() {
 		client.Config.ImageList = req.Images
 		client.Config.Security = merged
 		client.Config.FlagConf.Config.RoutineNums = runtime.NumCPU()
-		if err := client.Run(); err != nil {
-			log.Error(fmt.Sprintf("Run failed:  %v\n", err.Error()))
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Image transfer failed"})
-			return
-		}
+
+		// 异步执行
+		go func() {
+			if err := client.Run(); err != nil {
+				log.Error(fmt.Sprintf("Run failed:  %v\n", err.Error()))
+				// 处理错误（如发送通知等）
+			} else {
+				log.Infof("Image transfer executed successfully")
+			}
+		}()
 
 		c.JSON(http.StatusOK, gin.H{"message": "Image transfer executed successfully"})
 	})
