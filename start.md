@@ -11,7 +11,7 @@ go run cmd/image-transfer/main.go
   http://localhost:8080
 
 ```
-#### 2.请求接口
+#### 3.请求接口
 ```
 curl -X POST http://localhost:8080/image-transfer \
 -H "Content-Type: application/json" \
@@ -40,4 +40,10 @@ curl -X POST http://localhost:8080/image-transfer \
 
 ```
 返回： message":"Image transfer executed successfully" 成功
+```
+
+#### 4. 打包
+```
+ CGO_ENABLED=0 GOOS=windows  GOARCH=amd64 go build -o image-transfer.exe   cmd/image-transfer/main.go 
+ CGO_ENABLED=0 GOOS=linux  GOARCH=amd64 go build -o image-transfer   cmd/image-transfer/main.go 
 ```
