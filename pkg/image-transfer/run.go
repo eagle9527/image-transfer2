@@ -49,8 +49,7 @@ type Client struct {
 	failedJobGenerateList      *list.List
 	failedGenNormalURLPairList *list.List
 
-	config *configs.Configs
-
+	Config *configs.Configs
 	//finished generate ccrToTcr urlPair
 	urlPairFinished bool
 	// mutex
@@ -72,11 +71,12 @@ type URLPair struct {
 // Run is main function of a transfer client
 func (c *Client) Run() error {
 
-	if c.config.FlagConf.Config.CCRToTCR {
+	if c.Config.FlagConf.Config.CCRToTCR {
 		return c.CCRToTCRTransfer()
 	}
 
-	return c.NormalTransfer(c.config.ImageList, nil, nil, nil)
+	fmt.Println("c.Config.ImageList", c.Config.ImageList)
+	return c.NormalTransfer(c.Config.ImageList, nil, nil, nil)
 
 }
 
@@ -84,7 +84,7 @@ func (c *Client) Run() error {
 func (c *Client) CCRToTCRTransfer() error {
 
 	ccrClient := ccrapis.NewCCRAPIClient()
-	ccrNs, err := ccrClient.GetAllNamespaceByName(c.config.Secret, c.config.FlagConf.Config.CCRRegion)
+	ccrNs, err := ccrClient.GetAllNamespaceByName(c.Config.Secret, c.Config.FlagConf.Config.CCRRegion)
 	log.Debugf("ccr namespaces is %s", ccrNs)
 	if err != nil {
 		log.Errorf("Get ccr ns returned error: %s", err)
@@ -92,8 +92,8 @@ func (c *Client) CCRToTCRTransfer() error {
 	}
 
 	tcrClient := tcrapis.NewTCRAPIClient()
-	tcrNs, tcrID, err := tcrClient.GetAllNamespaceByName(c.config.Secret,
-		c.config.FlagConf.Config.TCRRegion, c.config.FlagConf.Config.TCRName)
+	tcrNs, tcrID, err := tcrClient.GetAllNamespaceByName(c.Config.Secret,
+		c.Config.FlagConf.Config.TCRRegion, c.Config.FlagConf.Config.TCRName)
 	log.Debugf("tcr namespaces is %s", tcrNs)
 	if err != nil {
 		log.Errorf("Get tcr ns returned error: %s", err)
@@ -101,7 +101,7 @@ func (c *Client) CCRToTCRTransfer() error {
 	}
 
 	//create ccr ns in tcr
-	failedNsList, err := c.CreateTcrNs(tcrClient, ccrNs, tcrNs, c.config.Secret, c.config.FlagConf.Config.TCRRegion, tcrID)
+	failedNsList, err := c.CreateTcrNs(tcrClient, ccrNs, tcrNs, c.Config.Secret, c.Config.FlagConf.Config.TCRRegion, tcrID)
 	if err != nil {
 		log.Errorf("CreateTcrNs error: %s", err)
 		return err
@@ -110,9 +110,9 @@ func (c *Client) CCRToTCRTransfer() error {
 	//retry failedNsList
 	if len(failedNsList) != 0 {
 		log.Infof("some ccr namespace create failed in tcr, retry Create Tcr Ns.")
-		for times := 0; times < c.config.FlagConf.Config.RetryNums && len(failedNsList) != 0; times++ {
+		for times := 0; times < c.Config.FlagConf.Config.RetryNums && len(failedNsList) != 0; times++ {
 			tmpFailedNsList, err := c.RetryCreateTcrNs(tcrClient, failedNsList,
-				c.config.Secret, c.config.FlagConf.Config.TCRRegion)
+				c.Config.Secret, c.Config.FlagConf.Config.TCRRegion)
 			if err != nil {
 				continue
 			} else {
@@ -126,8 +126,8 @@ func (c *Client) CCRToTCRTransfer() error {
 	}
 
 	//generate transfer rules
-	repoChan, err := c.GenerateCcrToTcrRules(failedNsList, ccrClient, c.config.Secret, c.config.FlagConf.Config.CCRRegion,
-		c.config.FlagConf.Config.TCRRegion, c.config.FlagConf.Config.TCRName)
+	repoChan, err := c.GenerateCcrToTcrRules(failedNsList, ccrClient, c.Config.Secret, c.Config.FlagConf.Config.CCRRegion,
+		c.Config.FlagConf.Config.TCRRegion, c.Config.FlagConf.Config.TCRName)
 	if err != nil {
 		return err
 	}
@@ -174,8 +174,8 @@ func (c *Client) RetryCreateTcrNs(tcrClient *tcrapis.TCRAPIClient, retryList []s
 		return failedList, err
 	}
 
-	tcrNs, tcrID, err := tcrClient.GetAllNamespaceByName(c.config.Secret,
-		c.config.FlagConf.Config.TCRRegion, c.config.FlagConf.Config.TCRName)
+	tcrNs, tcrID, err := tcrClient.GetAllNamespaceByName(c.Config.Secret,
+		c.Config.FlagConf.Config.TCRRegion, c.Config.FlagConf.Config.TCRName)
 	log.Debugf("tcr namespaces is %s", tcrNs)
 	if err != nil {
 		log.Errorf("retry create tcr ns, get tcr ns error: ", err)
@@ -226,7 +226,7 @@ func (c *Client) CreateTcrNs(tcrClient *tcrapis.TCRAPIClient, ccrNs, tcrNs []str
 
 // NormalTransfer is the normal mode of transfer
 func (c *Client) NormalTransfer(imageList map[string]string, ccrClient *ccrapis.CCRAPIClient, tcrClient *tcrapis.TCRAPIClient, repoChan chan string) error {
-	jobListChan := make(chan *transfer.Job, c.config.FlagConf.Config.RoutineNums)
+	jobListChan := make(chan *transfer.Job, c.Config.FlagConf.Config.RoutineNums)
 	fmt.Println("Start to handle transfer jobs, please wait ...")
 	wg := sync.WaitGroup{}
 
@@ -238,7 +238,7 @@ func (c *Client) NormalTransfer(imageList map[string]string, ccrClient *ccrapis.
 	}()
 
 	// ccrToTcr progress is (ccr api)repo --> repochan --> NormalPairList --> jobListChan
-	if c.config.FlagConf.Config.CCRToTCR {
+	if c.Config.FlagConf.Config.CCRToTCR {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -248,6 +248,7 @@ func (c *Client) NormalTransfer(imageList map[string]string, ccrClient *ccrapis.
 	} else {
 		// Normal progress is urlPairList --> NormalPairList --> jobListChan
 		for source, target := range imageList {
+			fmt.Println("source, target", source, target)
 			c.urlPairList.PushBack(&URLPair{
 				source: source,
 				target: target,
@@ -270,7 +271,7 @@ func (c *Client) NormalTransfer(imageList map[string]string, ccrClient *ccrapis.
 
 	log.Infof("Start to retry failed jobs...")
 
-	for times := 0; times < c.config.FlagConf.Config.RetryNums; times++ {
+	for times := 0; times < c.Config.FlagConf.Config.RetryNums; times++ {
 		log.Debugf("failedjobList len %d, failedGenNormalURLPairList len %d, failedJobGenerateList len %d", c.failedJobList.Len(), c.failedGenNormalURLPairList.Len(), c.failedJobGenerateList.Len())
 		c.Retry()
 	}
@@ -309,7 +310,7 @@ func (c *Client) NormalTransfer(imageList map[string]string, ccrClient *ccrapis.
 
 // Retry is retry the failed job
 func (c *Client) Retry() {
-	retryJobListChan := make(chan *transfer.Job, c.config.FlagConf.Config.RoutineNums)
+	retryJobListChan := make(chan *transfer.Job, c.Config.FlagConf.Config.RoutineNums)
 
 	wg1 := sync.WaitGroup{}
 	wg1.Add(1)
@@ -343,7 +344,7 @@ func (c *Client) Retry() {
 		if c.failedGenNormalURLPairList.Len() != 0 {
 			c.urlPairList.PushBackList(c.failedGenNormalURLPairList)
 			c.failedGenNormalURLPairList.Init()
-			if !c.config.FlagConf.Config.CCRToTCR {
+			if !c.Config.FlagConf.Config.CCRToTCR {
 				c.HandleURLPair()
 			} else {
 				c.CcrtoTcrGenTagRetry()
@@ -378,7 +379,7 @@ func NewTransferClient(opts *options.ClientOptions) (*Client, error) {
 		failedJobGenerateList:           list.New(),
 		normalURLPairList:               list.New(),
 		failedGenNormalURLPairList:      list.New(),
-		config:                          clientConfig,
+		Config:                          clientConfig,
 		jobListMutex:                    sync.Mutex{},
 		urlPairListMutex:                sync.Mutex{},
 		failedJobListMutex:              sync.Mutex{},
@@ -393,7 +394,7 @@ func (c *Client) rulesHandler(jobListChan chan *transfer.Job) {
 		close(jobListChan)
 	}()
 
-	routineNum := c.config.FlagConf.Config.RoutineNums
+	routineNum := c.Config.FlagConf.Config.RoutineNums
 	wg := sync.WaitGroup{}
 
 	for i := 0; i < routineNum; i++ {
@@ -428,7 +429,7 @@ func (c *Client) rulesHandler(jobListChan chan *transfer.Job) {
 
 func (c *Client) jobsHandler(jobListChan chan *transfer.Job) {
 
-	routineNum := c.config.FlagConf.Config.RoutineNums
+	routineNum := c.Config.FlagConf.Config.RoutineNums
 	wg := sync.WaitGroup{}
 	for i := 0; i < routineNum; i++ {
 		wg.Add(1)
@@ -557,14 +558,14 @@ func (c *Client) GenerateTransferJob(jobListChan chan *transfer.Job, source stri
 	var imageSource *transfer.ImageSource
 	var imageTarget *transfer.ImageTarget
 
-	sourceSecurity, exist := c.config.GetSecuritySpecific(sourceURL.GetRegistry(), sourceURL.GetNamespace())
+	sourceSecurity, exist := c.Config.GetSecuritySpecific(sourceURL.GetRegistry(), sourceURL.GetNamespace())
 	if exist {
 		log.Infof("Find auth information for %v, username: %v", sourceURL.GetURL(), sourceSecurity.Username)
 	} else {
 		log.Infof("Cannot find auth information for %v, pull actions will be anonymous", sourceURL.GetURL())
 	}
 
-	targetSecurity, exist := c.config.GetSecuritySpecific(targetURL.GetRegistry(), targetURL.GetNamespace())
+	targetSecurity, exist := c.Config.GetSecuritySpecific(targetURL.GetRegistry(), targetURL.GetNamespace())
 	if exist {
 		log.Infof("Find auth information for %v, username: %v", targetURL.GetURL(), targetSecurity.Username)
 
@@ -700,7 +701,7 @@ func (c *Client) GenJobFilterTag(sourceTags, targetTags []string, sourceURL, tar
 				log.Debugf("handle tag %s", urlPair.source)
 				//source tag exist in target
 				if utils.IsContain(targetTags, tag) {
-					if !c.config.FlagConf.Config.TagExistOverridden {
+					if !c.Config.FlagConf.Config.TagExistOverridden {
 						log.Warnf("Skip push image, target image %s/%s:%s already exist, flag \"--tag-exist-overridden\" is set so skip", targetURL.GetRegistry(), targetURL.GetRepoWithNamespace(), tag)
 						continue
 					}
@@ -756,8 +757,8 @@ func (c *Client) HandleCcrToTCrTags(repoChan chan string) error {
 			defer wg.Done()
 			for ccrRepo := range repoChan {
 				log.Infof("ccr repo is %s", ccrRepo)
-				source := fmt.Sprintf("%s%s%s", ccrapis.RegionPrefix[c.config.FlagConf.Config.CCRRegion], ".ccs.tencentyun.com/", ccrRepo)
-				target := c.config.FlagConf.Config.TCRName + ".tencentcloudcr.com/" + ccrRepo
+				source := fmt.Sprintf("%s%s%s", ccrapis.RegionPrefix[c.Config.FlagConf.Config.CCRRegion], ".ccs.tencentyun.com/", ccrRepo)
+				target := c.Config.FlagConf.Config.TCRName + ".tencentcloudcr.com/" + ccrRepo
 				urlPair := &URLPair{
 					source: source,
 					target: target,
@@ -802,8 +803,8 @@ func (c *Client) GenTagURLPair(source string, target string, wg *sync.WaitGroup)
 
 	// if dest is not specific, use default registry and src repo
 	if target == "" {
-		if c.config.FlagConf.Config.DefaultRegistry != "" {
-			target = c.config.FlagConf.Config.DefaultRegistry + "/" +
+		if c.Config.FlagConf.Config.DefaultRegistry != "" {
+			target = c.Config.FlagConf.Config.DefaultRegistry + "/" +
 				sourceURL.GetNamespace() + "/" + sourceURL.GetRepoWithTag()
 		} else {
 			return fmt.Errorf("the default registry and namespace should not be nil if you want to use them")
@@ -818,14 +819,14 @@ func (c *Client) GenTagURLPair(source string, target string, wg *sync.WaitGroup)
 	var imageSource *transfer.ImageSource
 	var imageTarget *transfer.ImageTarget
 
-	sourceSecurity, exist := c.config.GetSecuritySpecific(sourceURL.GetRegistry(), sourceURL.GetNamespace())
+	sourceSecurity, exist := c.Config.GetSecuritySpecific(sourceURL.GetRegistry(), sourceURL.GetNamespace())
 	if exist {
 		log.Infof("Find auth information for %v, username: %v", sourceURL.GetURL(), sourceSecurity.Username)
 	} else {
 		log.Infof("Cannot find auth information for %v, pull actions will be anonymous", sourceURL.GetURL())
 	}
 
-	targetSecurity, exist := c.config.GetSecuritySpecific(targetURL.GetRegistry(), targetURL.GetNamespace())
+	targetSecurity, exist := c.Config.GetSecuritySpecific(targetURL.GetRegistry(), targetURL.GetNamespace())
 	if exist {
 		log.Infof("Find auth information for %v, username: %v", targetURL.GetURL(), targetSecurity.Username)
 
@@ -926,7 +927,7 @@ func (c *Client) GenTagURLPair(source string, target string, wg *sync.WaitGroup)
 
 // HandleURLPair put urlPair to normalURLPair
 func (c *Client) HandleURLPair() {
-	routineNum := c.config.FlagConf.Config.RoutineNums
+	routineNum := c.Config.FlagConf.Config.RoutineNums
 	wg := sync.WaitGroup{}
 
 	for i := 0; i < routineNum; i++ {
@@ -941,6 +942,7 @@ func (c *Client) HandleURLPair() {
 					log.Infof("HandleURLPair is empty")
 					break
 				}
+
 				err := c.GenTagURLPair(urlPair.source, urlPair.target, &wg)
 				if err != nil {
 					log.Errorf("Generate tag urlPair %s to %s error: %v", urlPair.source, urlPair.target, err)
@@ -999,14 +1001,14 @@ func (c *Client) GenCcrtoTcrTagURLPair(source string, target string, wg *sync.Wa
 		return fmt.Errorf("url %s format error: %v", target, err)
 	}
 
-	sourceSecurity, exist := c.config.GetSecuritySpecific(sourceURL.GetRegistry(), sourceURL.GetNamespace())
+	sourceSecurity, exist := c.Config.GetSecuritySpecific(sourceURL.GetRegistry(), sourceURL.GetNamespace())
 	if exist {
 		log.Infof("Find auth information for %v, username: %v", sourceURL.GetURL(), sourceSecurity.Username)
 	} else {
 		log.Infof("Cannot find auth information for %v, pull actions will be anonymous", sourceURL.GetURL())
 	}
 
-	targetSecurity, exist := c.config.GetSecuritySpecific(targetURL.GetRegistry(), targetURL.GetNamespace())
+	targetSecurity, exist := c.Config.GetSecuritySpecific(targetURL.GetRegistry(), targetURL.GetNamespace())
 	if exist {
 		log.Infof("Find auth information for %v, username: %v", targetURL.GetURL(), targetSecurity.Username)
 
@@ -1017,13 +1019,13 @@ func (c *Client) GenCcrtoTcrTagURLPair(source string, target string, wg *sync.Wa
 	if sourceURL.GetTag() == "" {
 		ccrClient := ccrapis.NewCCRAPIClient()
 
-		ccrSecretID, ccrSecretKey, err := ccrapis.GetCcrSecret(c.config.Secret)
+		ccrSecretID, ccrSecretKey, err := ccrapis.GetCcrSecret(c.Config.Secret)
 		if err != nil {
 			log.Errorf("GetCcrSecret error: %s", err)
 			return err
 		}
 
-		sourceTags, err := ccrClient.GetRepoTags(ccrSecretID, ccrSecretKey, c.config.FlagConf.Config.CCRRegion, sourceURL.GetRepoWithNamespace(), int64(c.config.FlagConf.Config.CCRTagNums))
+		sourceTags, err := ccrClient.GetRepoTags(ccrSecretID, ccrSecretKey, c.Config.FlagConf.Config.CCRRegion, sourceURL.GetRepoWithNamespace(), int64(c.Config.FlagConf.Config.CCRTagNums))
 		log.Debugf("ccr target %s tags is %s", sourceURL.GetOriginURL(), sourceTags)
 		if err != nil {
 			log.Errorf("Failed get ccr repo %s tags, error: %s", sourceURL.GetRepoWithNamespace(), err)

@@ -94,9 +94,9 @@ func InitConfigs(opts *options.ClientOptions) (*Configs, error) {
 			instance.Security = securityList
 		}
 	} else {
-		if len(instance.FlagConf.Config.RuleFile) == 0 || len(instance.FlagConf.Config.SecurityFile) == 0 {
-			return nil, errors.New("no rule file or security file is provided, Exit")
-		}
+		//if len(instance.FlagConf.Config.RuleFile) == 0 || len(instance.FlagConf.Config.SecurityFile) == 0 {
+		//	return nil, errors.New("no rule file or security file is provided, Exit")
+		//}
 		instance.ImageList = instance.GetImageList()
 
 		securityList, err := instance.GetSecurity()
@@ -130,26 +130,27 @@ func GetConfigs() *Configs {
 
 // GetImageList get images list of configs instance
 func (c *Configs) GetImageList() map[string]string {
-	var imageList map[string]string
+	//var imageList map[string]string
+	//
+	//if err := openAndDecode(c.FlagConf.Config.RuleFile, &imageList); err != nil {
+	//	log.Errorf("decode config file %v error: %v", c.FlagConf.Config.RuleFile, err)
+	//	return nil
+	//}
 
-	if err := openAndDecode(c.FlagConf.Config.RuleFile, &imageList); err != nil {
-		log.Errorf("decode config file %v error: %v", c.FlagConf.Config.RuleFile, err)
-		return nil
-	}
-
-	return imageList
+	return c.ImageList
 }
 
 // GetSecurity gets the Security information in Config
 func (c *Configs) GetSecurity() (map[string]Security, error) {
-	var securityList map[string]Security
+	//var securityList map[string]Security
+	//
+	//c.Security
+	//if err := openAndDecode(c.FlagConf.Config.SecurityFile, &securityList); err != nil {
+	//	log.Errorf("decode config file %v error: %v", c.FlagConf.Config.SecurityFile, err)
+	//	return securityList, err
+	//}
 
-	if err := openAndDecode(c.FlagConf.Config.SecurityFile, &securityList); err != nil {
-		log.Errorf("decode config file %v error: %v", c.FlagConf.Config.SecurityFile, err)
-		return securityList, err
-	}
-
-	return securityList, nil
+	return c.Security, nil
 }
 
 // GetSecuritySpecific gets the specific authentication information in Config
@@ -162,6 +163,7 @@ func (c *Configs) GetSecuritySpecific(registry string, namespace string) (Securi
 		return moreSpecificAuth, exist
 	}
 	auth, exist := c.Security[registry]
+	fmt.Println("auth, exist", auth, exist, c.Security)
 	return auth, exist
 }
 
