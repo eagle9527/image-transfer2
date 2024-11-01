@@ -1,24 +1,7 @@
-/*
- * Tencent is pleased to support the open source community by making TKEStack
- * available.
- *
- * Copyright (C) 2012-2020 Tencent. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use
- * this file except in compliance with the License. You may obtain a copy of the
- * License at
- *
- * https://opensource.org/licenses/Apache-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OF ANY KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations under the License.
- */
-
 package main
 
 import (
+	"embed"
 	"encoding/base64"
 	"fmt"
 	"github.com/gin-contrib/cors"
@@ -32,6 +15,9 @@ import (
 	"tkestack.io/image-transfer/pkg/log"
 )
 
+//go:embed static/*
+var staticFiles embed.FS
+
 type Source map[string]configs.Security
 type Target map[string]configs.Security
 
@@ -44,7 +30,6 @@ type ImageTransferRequest struct {
 // 基本认证中间件
 func basicAuth(username, password string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 获取请求中的Authorization头
 		auth := c.Request.Header.Get("Authorization")
 		if auth == "" {
 			c.Header("WWW-Authenticate", "Basic realm=\"Authorization Required\"")
@@ -52,7 +37,6 @@ func basicAuth(username, password string) gin.HandlerFunc {
 			return
 		}
 
-		// 解码Authorization头
 		const prefix = "Basic "
 		if len(auth) <= len(prefix) || auth[:len(prefix)] != prefix {
 			c.Header("WWW-Authenticate", "Basic realm=\"Authorization Required\"")
@@ -67,7 +51,6 @@ func basicAuth(username, password string) gin.HandlerFunc {
 			return
 		}
 
-		// 将解码后的payload拆分成用户名和密码
 		pair := string(payload)
 		if pair != username+":"+password {
 			c.Header("WWW-Authenticate", "Basic realm=\"Authorization Required\"")
@@ -84,11 +67,11 @@ func main() {
 
 	// 添加 CORS 中间件
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:  []string{"*"},                                // 允许所有域名
-		AllowMethods:  []string{"GET", "POST", "OPTIONS"},           // 允许的方法
-		AllowHeaders:  []string{"Origin", "Content-Type", "Accept"}, // 允许的请求头
-		ExposeHeaders: []string{"Content-Length"},                   // 允许暴露的头
-		MaxAge:        12 * 3600,                                    // 预检请求的最大有效期（秒）
+		AllowOrigins:  []string{"*"},
+		AllowMethods:  []string{"GET", "POST", "OPTIONS"},
+		AllowHeaders:  []string{"Origin", "Content-Type", "Accept"},
+		ExposeHeaders: []string{"Content-Length"},
+		MaxAge:        12 * 3600,
 	}))
 
 	// 添加基本认证中间件
@@ -97,12 +80,11 @@ func main() {
 	r.Use(basicAuth(username, password))
 
 	// 提供静态文件服务
-	r.Static("/static", "./static") // 假设你的 HTML 文件存放在 ./static 目录下
+	r.StaticFS("/static", http.FS(staticFiles)) // 使用嵌入的文件系统
 
 	r.POST("/image-transfer", func(c *gin.Context) {
 		var req ImageTransferRequest
 
-		// 解析 JSON 请求体
 		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("error parsing request: %v", err)})
 			return
@@ -116,14 +98,10 @@ func main() {
 			return
 		}
 
-		// 合并两个 map
 		merged := make(map[string]configs.Security)
-		// 将 source 的键值对添加到 merged
 		for k, v := range req.Source {
 			merged[k] = v
 		}
-
-		// 将 target 的键值对添加到 merged
 		for k, v := range req.Target {
 			merged[k] = v
 		}
@@ -132,11 +110,9 @@ func main() {
 		client.Config.Security = merged
 		client.Config.FlagConf.Config.RoutineNums = runtime.NumCPU()
 
-		// 异步执行
 		go func() {
 			if err := client.Run(); err != nil {
 				log.Error(fmt.Sprintf("Run failed:  %v\n", err.Error()))
-				// 处理错误（如发送通知等）
 			} else {
 				log.Infof("Image transfer executed successfully")
 			}
@@ -147,7 +123,12 @@ func main() {
 
 	// 设置路由以访问静态页面
 	r.GET("/", func(c *gin.Context) {
-		c.File("./static/index.html") // 假设你的 HTML 文件是 index.html
+		data, err := staticFiles.ReadFile("static/index.html") // 读取嵌入的 HTML 文件
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to load index.html"})
+			return
+		}
+		c.Data(http.StatusOK, "text/html; charset=utf-8", data)
 	})
 
 	port := ":8080"

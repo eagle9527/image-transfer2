@@ -1,6 +1,6 @@
 module tkestack.io/image-transfer
 
-go 1.14
+go 1.16
 
 require (
 	github.com/containers/image/v5 v5.11.1
