@@ -163,7 +163,6 @@ func (c *Configs) GetSecuritySpecific(registry string, namespace string) (Securi
 		return moreSpecificAuth, exist
 	}
 	auth, exist := c.Security[registry]
-	fmt.Println("auth, exist", auth, exist, c.Security)
 	return auth, exist
 }
 
