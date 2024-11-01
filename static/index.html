@@ -57,6 +57,7 @@
 
             const imagesText = document.getElementById('images').value;
             const images = {};
+            const sourceImagesSet = new Set(); // 用于跟踪已处理的源镜像
 
             // 处理文本区域输入的源镜像和目标镜像
             imagesText.split('\n').forEach(line => {
@@ -64,7 +65,14 @@
                 if (parts.length === 2) {
                     const sourceImage = parts[0].trim();
                     const targetImage = parts[1].trim();
-                    images[sourceImage] = targetImage;
+
+                    // 检查源镜像是否已经存在
+                    if (!sourceImagesSet.has(sourceImage)) {
+                        images[sourceImage] = targetImage;
+                        sourceImagesSet.add(sourceImage); // 添加到集合中
+                    } else {
+                        alert(`重复的源镜像: ${sourceImage}`); // 提示用户
+                    }
                 }
             });
 
@@ -91,15 +99,19 @@
                 },
                 body: JSON.stringify(data)
             })
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('response').innerText = data.message;
-            })
-            .catch((error) => {
-                console.error('Error:', error);
-                document.getElementById('response').innerText = '请求失败: ' + error;
-            });
+                .then(response => response.json())
+                .then(data => {
+                    const currentTime = new Date().toLocaleString(); // 获取当前时间并格式化
+                    document.getElementById('response').innerText = `[${currentTime}] ${data.message}`;
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                    const currentTime = new Date().toLocaleString(); // 获取当前时间并格式化
+                    document.getElementById('response').innerText = `[${currentTime}] 请求失败: ${error}`;
+                });
         });
     </script>
+
+
 </body>
 </html>
