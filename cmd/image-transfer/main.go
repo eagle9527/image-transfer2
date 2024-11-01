@@ -19,6 +19,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"fmt"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -40,6 +41,42 @@ type ImageTransferRequest struct {
 	Images map[string]string `json:"images"`
 }
 
+// 基本认证中间件
+func basicAuth(username, password string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// 获取请求中的Authorization头
+		auth := c.Request.Header.Get("Authorization")
+		if auth == "" {
+			c.Header("WWW-Authenticate", "Basic realm=\"Authorization Required\"")
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+
+		// 解码Authorization头
+		const prefix = "Basic "
+		if len(auth) <= len(prefix) || auth[:len(prefix)] != prefix {
+			c.Header("WWW-Authenticate", "Basic realm=\"Authorization Required\"")
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+
+		payload, err := base64.StdEncoding.DecodeString(auth[len(prefix):])
+		if err != nil {
+			c.Header("WWW-Authenticate", "Basic realm=\"Authorization Required\"")
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+
+		// 将解码后的payload拆分成用户名和密码
+		pair := string(payload)
+		if pair != username+":"+password {
+			c.Header("WWW-Authenticate", "Basic realm=\"Authorization Required\"")
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+	}
+}
+
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
@@ -53,6 +90,11 @@ func main() {
 		ExposeHeaders: []string{"Content-Length"},                   // 允许暴露的头
 		MaxAge:        12 * 3600,                                    // 预检请求的最大有效期（秒）
 	}))
+
+	// 添加基本认证中间件
+	username := "admin"  // 替换为你的用户名
+	password := "123456" // 替换为你的密码
+	r.Use(basicAuth(username, password))
 
 	// 提供静态文件服务
 	r.Static("/static", "./static") // 假设你的 HTML 文件存放在 ./static 目录下
