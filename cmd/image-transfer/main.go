@@ -75,8 +75,8 @@ func main() {
 	}))
 
 	// 添加基本认证中间件
-	username := "admin"  // 替换为你的用户名
-	password := "123456" // 替换为你的密码
+	username := "admin"        // 替换为你的用户名
+	password := "RKO6G6VBH0R5" // 替换为你的密码
 	r.Use(basicAuth(username, password))
 
 	// 提供静态文件服务
