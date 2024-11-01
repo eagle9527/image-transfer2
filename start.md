@@ -6,7 +6,11 @@ go mod tidy
 go run cmd/image-transfer/main.go
 ```
 
+#### 2. UI 界面
+```
+  http://localhost:8080
 
+```
 #### 2.请求接口
 ```
 curl -X POST http://localhost:8080/image-transfer \
