@@ -61,7 +61,6 @@
         // 处理文本区域输入的源镜像和目标镜像
         imagesText.split('\n').forEach(line => {
             const colonCount = (line.match(/:/g) || []).length;
-
             if (colonCount === 1) {
                 const [sourceImage, targetImage] = line.split(':').map(part => part.trim());
                 if (!sourceImagesSet.has(sourceImage)) {
@@ -84,6 +83,12 @@
                 alert(`格式错误: ${line}，请确保冒号数量为1或3`);
             }
         });
+
+        // 如果 images 为空字典，则不提交到后端
+        if (Object.keys(images).length === 0) {
+            alert("请至少输入一对有效的镜像");
+            return;
+        }
 
         const data = {
             source: {
