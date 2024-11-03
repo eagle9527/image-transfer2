@@ -52,15 +52,14 @@
                     :autosize="{ minRows: 10, maxRows: 100 }"
             ></el-input>
         </el-form-item>
-
-        <h3>返回信息:</h3>
-        <el-card v-if="responseMessage" shadow="hover" id="response">
-            <p>{{ responseMessage }}</p>
-        </el-card>
-
         <el-form-item>
             <el-button type="primary" @click="submitForm">提交</el-button>
+            <el-button type="danger" @click="clearLogs" style="margin-left: 10px;">清空日志</el-button>
         </el-form-item>
+        <h3>返回信息:</h3>
+        <el-card v-if="responseMessage" shadow="hover" id="response">
+            <p v-html="responseMessage"></p>
+        </el-card>
     </el-form>
 </div>
 
@@ -83,6 +82,7 @@
                     imagesText: ""
                 },
                 responseMessage: "",
+                logs: [], // 用于存储日志
                 rules: {
                     sourceAddress: [
                         { required: true, message: '源地址是必填项', trigger: 'blur' }
@@ -170,7 +170,43 @@
                         this.$message.warning('请填写所有必填项');
                     }
                 });
+            },
+            connectWebSocket() {
+                const ws = new WebSocket('ws://localhost:8080/ws/logs');
+                ws.onmessage = (event) => {
+                    const currentTime = new Date().toLocaleString();
+                    const logMessage = `[${currentTime}] ${event.data}`.replace(/\n/g, '<br>');
+                    this.logs.push(logMessage);
+                    this.responseMessage = this.logs.join('<br>');
+                };
+
+                ws.onerror = (error) => {
+                    console.error("WebSocket error:", error);
+                };
+
+                ws.onclose = () => {
+                    console.log("WebSocket connection closed");
+                };
+            },
+            clearLogs() {
+                fetch('http://localhost:8080/clear-log', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        const currentTime = new Date().toLocaleString();
+                        this.responseMessage = `[${currentTime}] ${data.message}`;
+                        this.logs = []; // 清空本地日志数组
+                    })
+                    .catch(error => {
+                        const currentTime = new Date().toLocaleString();
+                        this.responseMessage = `[${currentTime}] 请求失败: ${error}`;
+                    });
             }
+        },
+        mounted() {
+            this.connectWebSocket(); // 连接 WebSocket
         }
     });
 
