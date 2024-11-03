@@ -20,9 +20,6 @@ package log
 
 import (
 	"fmt"
-	"log"
-	"os"
-	"strings"
 	"sync"
 	"time"
 
@@ -32,8 +29,12 @@ import (
 )
 
 var (
-	logger *zap.Logger
-	once   sync.Once
+	logger          *zap.Logger
+	once            sync.Once
+	logFilePath     = "./logs/app.log" // 指定日志文件路径
+	logWithColor    = false            // 是否启用彩色日志
+	logIgnoreCaller = false            // 是否忽略调用者信息
+	logSamplingFreq = time.Millisecond // 采样频率
 )
 
 // InitLogger initializes logger the way we want for tke.
@@ -51,7 +52,6 @@ func FlushLogger() {
 		// nolint: errcheck
 		logger.Sync()
 	}
-
 }
 
 // ZapLogger returns zap logger instance.
@@ -61,9 +61,9 @@ func ZapLogger() *zap.Logger {
 
 // Reset to recreate the logger by changed flag params
 func Reset() {
-	lock.Lock()
-	defer lock.Unlock()
-	logger = newLogger()
+	once.Do(func() {
+		logger = newLogger()
+	})
 }
 
 // Check return if logging a message at the specified level is enabled.
@@ -78,51 +78,33 @@ func Check(level int32) bool {
 	return checkEntry != nil
 }
 
-// StdErrLogger returns logger of standard library which writes to supplied zap
-// logger at error level
-func StdErrLogger() *log.Logger {
-	if l, err := zap.NewStdLogAt(getLogger(), zapcore.ErrorLevel); err == nil {
-		return l
-	}
-	return nil
-}
-
-// StdInfoLogger returns logger of standard library which writes to supplied zap
-// logger at info level
-func StdInfoLogger() *log.Logger {
-	if l, err := zap.NewStdLogAt(getLogger(), zapcore.InfoLevel); err == nil {
-		return l
-	}
-	return nil
-}
-
 // Debug method output debug level log.
-func Debug(msg string, fields ...Field) {
+func Debug(msg string, fields ...zapcore.Field) {
 	getLogger().Debug(msg, fields...)
 }
 
 // Info method output info level log.
-func Info(msg string, fields ...Field) {
+func Info(msg string, fields ...zapcore.Field) {
 	getLogger().Info(msg, fields...)
 }
 
 // Warn method output warning level log.
-func Warn(msg string, fields ...Field) {
+func Warn(msg string, fields ...zapcore.Field) {
 	getLogger().Warn(msg, fields...)
 }
 
 // Error method output error level log.
-func Error(msg string, fields ...Field) {
+func Error(msg string, fields ...zapcore.Field) {
 	getLogger().Error(msg, fields...)
 }
 
 // Panic method output panic level log and shutdown application.
-func Panic(msg string, fields ...Field) {
+func Panic(msg string, fields ...zapcore.Field) {
 	getLogger().Panic(msg, fields...)
 }
 
 // Fatal method output fatal level log.
-func Fatal(msg string, fields ...Field) {
+func Fatal(msg string, fields ...zapcore.Field) {
 	getLogger().Fatal(msg, fields...)
 }
 
@@ -173,54 +155,28 @@ func newLogger() *zap.Logger {
 		StacktraceKey:  "stack",
 		LineEnding:     zapcore.DefaultLineEnding,
 		EncodeLevel:    zapcore.LowercaseLevelEncoder,
-		EncodeTime:     timeEncoder,
-		EncodeDuration: milliSecondsDurationEncoder,
+		EncodeTime:     zapcore.ISO8601TimeEncoder,
+		EncodeDuration: zapcore.SecondsDurationEncoder,
 		EncodeCaller:   zapcore.ShortCallerEncoder,
 	}
-	// when output to local path, with color is forbidden
-	if *logWithColor && ((logOutputPaths == nil) || (len(*logOutputPaths) == 0)) {
-		encoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
-	}
-	loggerConfig := &zap.Config{
-		Level:             zap.NewAtomicLevelAt(mustLevel()),
-		Development:       false,
-		DisableCaller:     *logIgnoreCaller,
-		DisableStacktrace: false,
-		Sampling: &zap.SamplingConfig{
-			Initial:    100,
-			Thereafter: int(*logSamplingFreq / time.Millisecond),
-		},
-		Encoding:         MustParseFormat(),
-		EncoderConfig:    encoderConfig,
-		OutputPaths:      []string{"stdout"},
-		ErrorOutputPaths: []string{"stderr"},
-	}
-	if logOutputPaths != nil {
-		loggerConfig.OutputPaths = append(loggerConfig.OutputPaths, *logOutputPaths...)
-	}
 
-	//log rolling
-	w := zapcore.AddSync(&lumberjack.Logger{
-		Filename:   strings.Join(*logOutputPaths, ""),
+	// 创建一个自定义编码器
+	writer := zapcore.AddSync(&lumberjack.Logger{
+		Filename:   logFilePath,
 		MaxSize:    500, // megabytes
 		MaxBackups: 3,
 		MaxAge:     30, // days
 	})
+
 	core := zapcore.NewCore(
-		zapcore.NewConsoleEncoder(encoderConfig),
-		zapcore.NewMultiWriteSyncer(zapcore.AddSync(os.Stdout),
-			w),
-		zap.NewAtomicLevelAt(mustLevel()),
+		zapcore.NewConsoleEncoder(encoderConfig), // 使用控制台编码器
+		writer,                                   // 输出到文件
+		zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
+			return lvl >= zapcore.InfoLevel
+		}),
 	)
 
-	l := zap.New(core, zap.AddStacktrace(zapcore.PanicLevel),
-		zap.AddCaller(), zap.Development(), zap.AddCallerSkip(2))
+	l := zap.New(core, zap.AddStacktrace(zapcore.PanicLevel), zap.AddCaller())
 
-	/*l, err := loggerConfig.Build(zap.AddStacktrace(zapcore.PanicLevel),
-		zap.AddCallerSkip(1))
-	if err != nil {
-		panic(err)
-	}*/
-	initRestfulLogger(l)
 	return l
 }

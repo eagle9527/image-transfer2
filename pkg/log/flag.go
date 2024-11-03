@@ -20,11 +20,9 @@ package log
 
 import (
 	"fmt"
-	"sync"
-	"time"
-
 	"github.com/spf13/pflag"
 	"go.uber.org/zap/zapcore"
+	"sync"
 )
 
 const (
@@ -43,13 +41,13 @@ const (
 )
 
 var (
-	lock            = &sync.RWMutex{}
-	logSamplingFreq = pflag.Duration(SamplingFreqFlagName, 100*time.Millisecond, "Log sampling `INTERVAL`")
-	logLevel        = pflag.String(LevelFlagName, "info", "Minimum log output `LEVEL`")
-	logFormat       = pflag.String(FormatFlagName, "plain", "Log output `FORMAT`")
-	logWithColor    = pflag.Bool(WithColorFlagName, false, "Whether to output colored log")
-	logIgnoreCaller = pflag.Bool(IgnoreCallerFlagName, false, "Ignore the output of caller information in the log")
-	logOutputPaths  = pflag.StringSlice(OutputPathsName, []string{}, "Log output paths, comma separated.")
+	lock = &sync.RWMutex{}
+	//logSamplingFreq = pflag.Duration(SamplingFreqFlagName, 100*time.Millisecond, "Log sampling `INTERVAL`")
+	logLevel  = pflag.String(LevelFlagName, "info", "Minimum log output `LEVEL`")
+	logFormat = pflag.String(FormatFlagName, "plain", "Log output `FORMAT`")
+	//logWithColor    = pflag.Bool(WithColorFlagName, false, "Whether to output colored log")
+	//logIgnoreCaller = pflag.Bool(IgnoreCallerFlagName, false, "Ignore the output of caller information in the log")
+	logOutputPaths = pflag.StringSlice(OutputPathsName, []string{}, "Log output paths, comma separated.")
 )
 
 // AddFlags registers this package's flags on arbitrary FlagSets, such that they
