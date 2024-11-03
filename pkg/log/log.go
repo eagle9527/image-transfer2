@@ -163,7 +163,7 @@ func newLogger() *zap.Logger {
 	// 创建一个自定义编码器
 	writer := zapcore.AddSync(&lumberjack.Logger{
 		Filename:   logFilePath,
-		MaxSize:    1024, // megabytes
+		MaxSize:    10240, // megabytes
 		MaxBackups: 0,
 		MaxAge:     0, // days
 	})
