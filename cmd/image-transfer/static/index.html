@@ -176,7 +176,7 @@
                 ws.onmessage = (event) => {
                     const currentTime = new Date().toLocaleString();
                     const logMessage = `${event.data}`.replace(/\n/g, '<br>');
-                    this.logs.push(logMessage);
+                    this.logs.unshift(logMessage);
                     this.responseMessage = this.logs.join('<br>');
                 };
 
