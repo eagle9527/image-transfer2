@@ -75,7 +75,6 @@ func (c *Client) Run() error {
 		return c.CCRToTCRTransfer()
 	}
 
-	fmt.Println("c.Config.ImageList", c.Config.ImageList)
 	return c.NormalTransfer(c.Config.ImageList, nil, nil, nil)
 
 }
@@ -227,7 +226,7 @@ func (c *Client) CreateTcrNs(tcrClient *tcrapis.TCRAPIClient, ccrNs, tcrNs []str
 // NormalTransfer is the normal mode of transfer
 func (c *Client) NormalTransfer(imageList map[string]string, ccrClient *ccrapis.CCRAPIClient, tcrClient *tcrapis.TCRAPIClient, repoChan chan string) error {
 	jobListChan := make(chan *transfer.Job, c.Config.FlagConf.Config.RoutineNums)
-	fmt.Println("Start to handle transfer jobs, please wait ...")
+	log.Info("Start to handle transfer jobs, please wait ...")
 	wg := sync.WaitGroup{}
 
 	// generate goroutines to handle transfer jobs
@@ -248,7 +247,6 @@ func (c *Client) NormalTransfer(imageList map[string]string, ccrClient *ccrapis.
 	} else {
 		// Normal progress is urlPairList --> NormalPairList --> jobListChan
 		for source, target := range imageList {
-			fmt.Println("source, target", source, target)
 			c.urlPairList.PushBack(&URLPair{
 				source: source,
 				target: target,
