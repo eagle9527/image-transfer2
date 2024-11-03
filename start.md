@@ -44,6 +44,6 @@ curl -X POST http://localhost:8080/image-transfer \
 
 #### 4. 打包
 ```
- CGO_ENABLED=0 GOOS=windows  GOARCH=amd64 go build -o image-transfer.exe   cmd/image-transfer/main.go 
- CGO_ENABLED=0 GOOS=linux  GOARCH=amd64 go build -o image-transfer   cmd/image-transfer/main.go 
+ cd  cmd/image-transfer && CGO_ENABLED=0 GOOS=windows  GOARCH=amd64 go build -o image-transfer.exe  main.go 
+ cmd/image-transfer && CGO_ENABLED=0 GOOS=linux  GOARCH=amd64 go build -o image-transfer   main.go 
 ```

@@ -184,9 +184,6 @@ func main() {
 	password := "RKO6G6VBH0R5" // 替换为你的密码
 	r.Use(basicAuth(username, password))
 
-	// 提供静态文件服务
-	r.StaticFS("/static", http.Dir("./static"))
-
 	r.POST("/image-transfer", func(c *gin.Context) {
 		var req ImageTransferRequest
 
@@ -234,6 +231,31 @@ func main() {
 			return
 		}
 		c.Data(http.StatusOK, "text/html; charset=utf-8", data)
+	})
+
+	// 提供 CSS 文件
+	r.GET("/static/css/*filepath", func(c *gin.Context) {
+		filepath := c.Param("filepath")
+		log.Infof("Requested CSS file: %s", filepath)              // 打印请求的文件路径
+		data, err := staticFiles.ReadFile("static/css" + filepath) // 读取嵌入的 CSS 文件
+		if err != nil {
+			log.Errorf("Error reading CSS file: %v", err) // 打印具体错误
+			c.JSON(http.StatusNotFound, gin.H{"error": "CSS file not found"})
+			return
+		}
+		c.Data(http.StatusOK, "text/css; charset=utf-8", data)
+	})
+
+	// 提供 JS 文件
+	r.GET("/static/js/*filepath", func(c *gin.Context) {
+		filepath := c.Param("filepath")
+		fmt.Println("filepath", filepath)
+		data, err := staticFiles.ReadFile("static/js" + filepath) // 读取嵌入的 JS 文件
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "JS file not found"})
+			return
+		}
+		c.Data(http.StatusOK, "application/javascript; charset=utf-8", data)
 	})
 
 	// WebSocket 路由
