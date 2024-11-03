@@ -4,126 +4,178 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Image Transfer</title>
+    <!-- Element Plus CSS -->
+    <link rel="stylesheet" href="/static/css/index.css">
     <style>
-        .image-pair {
-            margin-bottom: 10px;
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
         }
-        #images {
-            width: 100%; /* 设置文本区域宽度为 100% */
-            max-width: 2000px; /* 可选：设置最大宽度 */
-            height: 400px; /* 设置高度 */
+        #response {
+            margin-top: 20px;
         }
     </style>
 </head>
 <body>
-<h1>Image Transfer</h1>
-<form id="transferForm">
-    <h3>Source:</h3>
-    <label for="sourceAddress">源地址:</label>
-    <input type="text" id="sourceAddress" placeholder="例如: registry.cn-hangzhou.aliyuncs.com" required><br>
-    <label for="sourceUsername">用户名:</label>
-    <input type="text" id="sourceUsername" required><br>
-    <label for="sourcePassword">密码:</label>
-    <input type="password" id="sourcePassword" required><br>
+<div id="app" class="container">
+    <h1>Image Transfer</h1>
+    <el-form ref="form" :model="form" @submit.native.prevent="submitForm" :rules="rules">
 
-    <h3>Target:</h3>
-    <label for="targetAddress">目标地址:</label>
-    <input type="text" id="targetAddress" placeholder="例如: swr.cn-east-3.myhuaweicloud.com" required><br>
-    <label for="targetUsername">用户名:</label>
-    <input type="text" id="targetUsername" required><br>
-    <label for="targetPassword">密码:</label>
-    <input type="password" id="targetPassword" required><br>
+        <h3>Source:</h3>
+        <el-form-item label="源地址" :label-width="labelWidth" prop="sourceAddress" required>
+            <el-input v-model="form.sourceAddress" placeholder="例如: registry.cn-hangzhou.aliyuncs.com" clearable></el-input>
+        </el-form-item>
+        <el-form-item label="用户名" :label-width="labelWidth" prop="sourceUsername" required>
+            <el-input v-model="form.sourceUsername" clearable></el-input>
+        </el-form-item>
+        <el-form-item label="密码" :label-width="labelWidth" prop="sourcePassword" required>
+            <el-input v-model="form.sourcePassword" type="password" show-password></el-input>
+        </el-form-item>
 
-    <h3>Images:</h3>
-    <textarea id="images" placeholder='输入格式：source_image:target_image，每对之间换行'></textarea><br>
+        <h3>Target:</h3>
+        <el-form-item label="目标地址" :label-width="labelWidth" prop="targetAddress" required>
+            <el-input v-model="form.targetAddress" placeholder="例如: swr.cn-east-3.myhuaweicloud.com" clearable></el-input>
+        </el-form-item>
+        <el-form-item label="用户名" :label-width="labelWidth" prop="targetUsername" required>
+            <el-input v-model="form.targetUsername" clearable></el-input>
+        </el-form-item>
+        <el-form-item label="密码" :label-width="labelWidth" prop="targetPassword" required>
+            <el-input v-model="form.targetPassword" type="password" show-password></el-input>
+        </el-form-item>
 
-    <h3>返回信息:</h3>
-    <div id="response"></div>
+        <h3>Images:</h3>
+        <el-form-item label="镜像列表" :label-width="labelWidth" prop="imagesText" required>
+            <el-input
+                    type="textarea"
+                    v-model="form.imagesText"
+                    placeholder="输入格式：source_image:target_image，每对之间换行"
+                    :autosize="{ minRows: 10, maxRows: 100 }"
+            ></el-input>
+        </el-form-item>
 
-    <button type="submit">提交</button>
-</form>
+        <h3>返回信息:</h3>
+        <el-card v-if="responseMessage" shadow="hover" id="response">
+            <p>{{ responseMessage }}</p>
+        </el-card>
 
+        <el-form-item>
+            <el-button type="primary" @click="submitForm">提交</el-button>
+        </el-form-item>
+    </el-form>
+</div>
+
+<!-- Vue 3 CDN -->
+<script src="/static/js/vue.global.js"></script>
+<!-- Element Plus CDN -->
+<script src="/static/js/index.full.js"></script>
 <script>
-    document.getElementById('transferForm').addEventListener('submit', function(event) {
-        event.preventDefault();
-
-        const sourceAddress = document.getElementById('sourceAddress').value.trim();
-        const sourceUsername = document.getElementById('sourceUsername').value.trim();
-        const sourcePassword = document.getElementById('sourcePassword').value.trim();
-        const targetAddress = document.getElementById('targetAddress').value.trim();
-        const targetUsername = document.getElementById('targetUsername').value.trim();
-        const targetPassword = document.getElementById('targetPassword').value.trim();
-
-        const imagesText = document.getElementById('images').value;
-        const images = {};
-        const sourceImagesSet = new Set(); // 用于跟踪已处理的源镜像
-
-        // 处理文本区域输入的源镜像和目标镜像
-        imagesText.split('\n').forEach(line => {
-            const colonCount = (line.match(/:/g) || []).length;
-            if (colonCount === 1) {
-                const [sourceImage, targetImage] = line.split(':').map(part => part.trim());
-                if (!sourceImagesSet.has(sourceImage)) {
-                    images[sourceImage] = targetImage; // 目标镜像作为值
-                    sourceImagesSet.add(sourceImage);
-                } else {
-                    alert(`重复的源镜像: ${sourceImage}`);
+    const app = Vue.createApp({
+        data() {
+            return {
+                labelWidth: "80px",
+                form: {
+                    sourceAddress: "",
+                    sourceUsername: "",
+                    sourcePassword: "",
+                    targetAddress: "",
+                    targetUsername: "",
+                    targetPassword: "",
+                    imagesText: ""
+                },
+                responseMessage: "",
+                rules: {
+                    sourceAddress: [
+                        { required: true, message: '源地址是必填项', trigger: 'blur' }
+                    ],
+                    sourceUsername: [
+                        { required: true, message: '用户名是必填项', trigger: 'blur' }
+                    ],
+                    sourcePassword: [
+                        { required: true, message: '密码是必填项', trigger: 'blur' }
+                    ],
+                    targetAddress: [
+                        { required: true, message: '目标地址是必填项', trigger: 'blur' }
+                    ],
+                    targetUsername: [
+                        { required: true, message: '用户名是必填项', trigger: 'blur' }
+                    ],
+                    targetPassword: [
+                        { required: true, message: '密码是必填项', trigger: 'blur' }
+                    ],
+                    imagesText: [
+                        { required: true, message: '镜像列表是必填项', trigger: 'blur' }
+                    ]
                 }
-            } else if (colonCount === 3) {
-                const parts = line.split(':');
-                const sourceImage = parts.slice(0, 2).join(':').trim();
-                const targetImage = parts.slice(2).join(':').trim();
-                if (!sourceImagesSet.has(sourceImage)) {
-                    images[sourceImage] = targetImage; // 目标镜像作为值
-                    sourceImagesSet.add(sourceImage);
-                } else {
-                    alert(`重复的源镜像: ${sourceImage}`);
-                }
-            } else {
-                alert(`格式错误: ${line}，请确保冒号数量为1或3`);
+            };
+        },
+        methods: {
+            submitForm() {
+                this.$refs.form.validate((valid) => {
+                    if (valid) {
+                        const { sourceAddress, sourceUsername, sourcePassword, targetAddress, targetUsername, targetPassword, imagesText } = this.form;
+
+                        const images = {};
+                        const sourceImagesSet = new Set();
+                        imagesText.split('\n').forEach(line => {
+                            const colonCount = (line.match(/:/g) || []).length;
+                            if (colonCount === 1) {
+                                const [sourceImage, targetImage] = line.split(':').map(part => part.trim());
+                                if (!sourceImagesSet.has(sourceImage)) {
+                                    images[sourceImage] = targetImage;
+                                    sourceImagesSet.add(sourceImage);
+                                } else {
+                                    this.$message.error(`重复的源镜像: ${sourceImage}`);
+                                }
+                            } else if (colonCount === 3) {
+                                const parts = line.split(':');
+                                const sourceImage = parts.slice(0, 2).join(':').trim();
+                                const targetImage = parts.slice(2).join(':').trim();
+                                if (!sourceImagesSet.has(sourceImage)) {
+                                    images[sourceImage] = targetImage;
+                                    sourceImagesSet.add(sourceImage);
+                                } else {
+                                    this.$message.error(`重复的源镜像: ${sourceImage}`);
+                                }
+                            } else {
+                                this.$message.error(`格式错误: ${line}，请确保冒号数量为1或3`);
+                            }
+                        });
+
+                        if (Object.keys(images).length === 0) {
+                            this.$message.warning("请至少输入一对有效的镜像");
+                            return;
+                        }
+
+                        const data = {
+                            source: { [sourceAddress]: { username: sourceUsername, password: sourcePassword } },
+                            target: { [targetAddress]: { username: targetUsername, password: targetPassword } },
+                            images: images
+                        };
+
+                        fetch('http://localhost:8080/image-transfer', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(data)
+                        })
+                            .then(response => response.json())
+                            .then(data => {
+                                const currentTime = new Date().toLocaleString();
+                                this.responseMessage = `[${currentTime}] ${data.message}`;
+                            })
+                            .catch(error => {
+                                const currentTime = new Date().toLocaleString();
+                                this.responseMessage = `[${currentTime}] 请求失败: ${error}`;
+                            });
+                    } else {
+                        this.$message.warning('请填写所有必填项');
+                    }
+                });
             }
-        });
-
-        // 如果 images 为空字典，则不提交到后端
-        if (Object.keys(images).length === 0) {
-            alert("请至少输入一对有效的镜像");
-            return;
         }
-
-        const data = {
-            source: {
-                [sourceAddress]: {
-                    username: sourceUsername,
-                    password: sourcePassword
-                }
-            },
-            target: {
-                [targetAddress]: {
-                    username: targetUsername,
-                    password: targetPassword
-                }
-            },
-            images: images
-        };
-
-        fetch('http://localhost:8080/image-transfer', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data)
-        })
-            .then(response => response.json())
-            .then(data => {
-                const currentTime = new Date().toLocaleString();
-                document.getElementById('response').innerText = `[${currentTime}] ${data.message}`;
-            })
-            .catch((error) => {
-                const currentTime = new Date().toLocaleString();
-                document.getElementById('response').innerText = `[${currentTime}] 请求失败: ${error}`;
-            });
     });
-</script>
 
+    app.use(ElementPlus);
+    app.mount('#app');
+</script>
 </body>
 </html>

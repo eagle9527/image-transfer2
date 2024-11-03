@@ -80,7 +80,8 @@ func main() {
 	r.Use(basicAuth(username, password))
 
 	// 提供静态文件服务
-	r.StaticFS("/static", http.FS(staticFiles)) // 使用嵌入的文件系统
+	r.StaticFS("/static", http.Dir("./static"))
+	//r.StaticFS("/static", http.FS(staticFiles)) // 使用嵌入的文件系统
 
 	r.POST("/image-transfer", func(c *gin.Context) {
 		var req ImageTransferRequest
