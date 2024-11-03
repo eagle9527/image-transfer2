@@ -174,7 +174,6 @@
             connectWebSocket() {
                 const ws = new WebSocket('ws://localhost:8080/ws/logs');
                 ws.onmessage = (event) => {
-                    const currentTime = new Date().toLocaleString();
                     const logMessage = `${event.data}`.replace(/\n/g, '<br>');
                     this.logs.unshift(logMessage);
                     this.responseMessage = this.logs.join('<br>');
