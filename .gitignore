@@ -6,3 +6,4 @@ ccr_to_tcr_rules
 registry-secret.yaml
 start.sh
 transfer-rule.yaml
+/cmd/image-transfer/logs/
