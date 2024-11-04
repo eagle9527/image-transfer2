@@ -123,9 +123,16 @@ func main() {
 
 	r.POST("/clear-log", utils.ClearLogHandler)
 
-	port := ":8080"
+	// 获取随机端口
+	port, err := utils.GetRandomPort()
+	if err != nil {
+		log.Error("Error getting random port")
+		os.Exit(1)
+		return
+	}
+
 	fmt.Printf("Starting server on %s\n", port)
-	if err := r.Run(port); err != nil {
+	if err := r.Run(":" + port); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}

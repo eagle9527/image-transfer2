@@ -6,8 +6,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"io"
+	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 	"tkestack.io/image-transfer/pkg/log"
 )
@@ -145,4 +147,16 @@ func BasicAuth(username, password string) gin.HandlerFunc {
 			return
 		}
 	}
+}
+
+// 获取一个未使用的随机端口
+func GetRandomPort() (string, error) {
+	listener, err := net.Listen("tcp", "localhost:0")
+	if err != nil {
+		return "", err
+	}
+	defer listener.Close()
+
+	port := listener.Addr().(*net.TCPAddr).Port
+	return strconv.Itoa(port), nil
 }
