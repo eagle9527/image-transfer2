@@ -22,9 +22,11 @@ type Source map[string]configs.Security
 type Target map[string]configs.Security
 
 type ImageTransferRequest struct {
-	Source Source            `json:"source"`
-	Target Target            `json:"target"`
-	Images map[string]string `json:"images"`
+	Source      Source            `json:"source"`
+	Target      Target            `json:"target"`
+	Images      map[string]string `json:"images"`
+	RoutineNums int               `json:"routine_nums"`
+	RetryNums   int               `json:"retry_nums"`
 }
 
 func main() {
@@ -72,7 +74,15 @@ func main() {
 
 		client.Config.ImageList = req.Images
 		client.Config.Security = merged
-		client.Config.FlagConf.Config.RoutineNums = runtime.NumCPU()
+		client.Config.FlagConf.Config.RoutineNums = 1
+		client.Config.FlagConf.Config.RetryNums = 1
+		if req.RoutineNums != 0 {
+			client.Config.FlagConf.Config.RoutineNums = req.RoutineNums
+		}
+
+		if req.RetryNums != 0 {
+			client.Config.FlagConf.Config.RetryNums = req.RetryNums
+		}
 
 		go func() {
 			if err := client.Run(); err != nil {
@@ -123,16 +133,9 @@ func main() {
 
 	r.POST("/clear-log", utils.ClearLogHandler)
 
-	// 获取随机端口
-	port, err := utils.GetRandomPort()
-	if err != nil {
-		log.Error("Error getting random port")
-		os.Exit(1)
-		return
-	}
-
+	port := ":8080"
 	fmt.Printf("Starting server on %s\n", port)
-	if err := r.Run(":" + port); err != nil {
+	if err := r.Run(port); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}

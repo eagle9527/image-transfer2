@@ -42,7 +42,12 @@
         <el-form-item label="密码" :label-width="labelWidth" prop="targetPassword" required>
             <el-input v-model="form.targetPassword" type="password" show-password></el-input>
         </el-form-item>
-
+        <el-form-item label="并发" :label-width="labelWidth" prop="routine_nums" required>
+            <el-input v-model.number="form.routine_nums" type="number"></el-input> <!-- 添加 type="number" -->
+        </el-form-item>
+        <el-form-item label="重试次数" :label-width="labelWidth" prop="retry_nums" required>
+            <el-input v-model.number="form.retry_nums" type="number"></el-input> <!-- 添加 type="number" -->
+        </el-form-item>
         <h3>Images:</h3>
         <el-form-item label="镜像列表" :label-width="labelWidth" prop="imagesText" required>
             <el-input
@@ -79,7 +84,9 @@
                     targetAddress: "",
                     targetUsername: "",
                     targetPassword: "",
-                    imagesText: ""
+                    imagesText: "",
+                    routine_nums: 5,
+                    retry_nums: 3,
                 },
                 responseMessage: "",
                 logs: [], // 用于存储日志
@@ -104,6 +111,16 @@
                     ],
                     imagesText: [
                         { required: true, message: '镜像列表是必填项', trigger: 'blur' }
+                    ],
+                    routine_nums: [
+                        { required: true, message: '请输入并发数', trigger: 'blur' },
+                        { type: 'number', message: '必须是数字', trigger: ['blur', 'change'] },
+                        { validator: this.validatePositiveNumber, trigger: 'blur' }
+                    ],
+                    retry_nums: [
+                        { required: true, message: '请输入重试次数', trigger: 'blur' },
+                        { type: 'number', message: '必须是数字', trigger: ['blur', 'change'] },
+                        { validator: this.validatePositiveNumber, trigger: 'blur' }
                     ]
                 }
             };
@@ -112,7 +129,10 @@
             submitForm() {
                 this.$refs.form.validate((valid) => {
                     if (valid) {
-                        const { sourceAddress, sourceUsername, sourcePassword, targetAddress, targetUsername, targetPassword, imagesText } = this.form;
+                        // 在提交前将输入的字符串转换为数字
+                        this.form.routine_nums = Number(this.form.routine_nums);
+                        this.form.retry_nums = Number(this.form.retry_nums);
+                        const { sourceAddress, sourceUsername, sourcePassword, targetAddress, targetUsername, targetPassword, imagesText, routine_nums, retry_nums} = this.form;
 
                         const images = {};
                         const sourceImagesSet = new Set();
@@ -149,7 +169,9 @@
                         const data = {
                             source: { [sourceAddress]: { username: sourceUsername, password: sourcePassword } },
                             target: { [targetAddress]: { username: targetUsername, password: targetPassword } },
-                            images: images
+                            images: images,
+                            routine_nums: routine_nums,
+                            retry_nums: retry_nums,
                         };
 
                         fetch('http://localhost:8080/image-transfer', {
@@ -202,7 +224,19 @@
                         const currentTime = new Date().toLocaleString();
                         this.responseMessage = `[${currentTime}] 请求失败: ${error}`;
                     });
-            }
+            },
+            validatePositiveNumber(rule, value, callback) {
+                const numValue = Number(value);
+                if (value === null || value === '') {
+                    callback(new Error('不能为空'));
+                } else if (isNaN(numValue)) { // 检查是否为数字
+                    callback(new Error('必须是数字'));
+                } else if (numValue <= 0) { // 检查是否大于 0
+                    callback(new Error('必须大于 0'));
+                } else {
+                    callback(); // 验证通过
+                }
+            },
         },
         mounted() {
             this.connectWebSocket(); // 连接 WebSocket
