@@ -9,6 +9,8 @@ go run cmd/image-transfer/main.go
 
 #### 2. UI 界面
 ```
+  默认用户名: admin
+  默认密码:   RKO6G6VBH0R5
   http://localhost:8080
 ```
 ![image-transfer-UI](https://github.com/eagle9527/image-transfer2/blob/main/image-transfer-UI.png?raw=true)
