@@ -10,8 +10,8 @@ go run cmd/image-transfer/main.go
 #### 2. UI 界面
 ```
   http://localhost:8080
-
 ```
+![image-transfer-UI](https://github.com/eagle9527/image-transfer2/blob/main/image-transfer-UI.png?raw=true)
 
 `image-transfer` 是一个docker镜像迁移工具，用于对不同镜像仓库的镜像进行批量迁移。
 
