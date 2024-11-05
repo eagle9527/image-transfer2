@@ -1,5 +1,18 @@
 # 镜像迁移工具：image-transfer
 
+基于:  https://github.com/tkestack/image-transfer 根据需求做了web UI集成
+#### 1.运行image-transfer
+``` 
+go mod tidy
+go run cmd/image-transfer/main.go
+```
+
+#### 2. UI 界面
+```
+  http://localhost:8080
+
+```
+
 `image-transfer` 是一个docker镜像迁移工具，用于对不同镜像仓库的镜像进行批量迁移。
 
 ## 特性
