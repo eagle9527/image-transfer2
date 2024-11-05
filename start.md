@@ -7,7 +7,9 @@ go run cmd/image-transfer/main.go
 ```
 
 #### 2. UI 界面
-```
+``` 
+  默认账号: admin
+  默认密码: RKO6G6VBH0R5
   http://localhost:8080
 
 ```
