@@ -13,6 +13,12 @@ go run cmd/image-transfer/main.go
   默认密码:   RKO6G6VBH0R5
   http://localhost:8080
 ```
+#### 3. 实现功能
+```
+1. web界面提交镜像推送请求。
+2. websocket实时回显推送详细日志。
+3. 历史日志清理。
+```
 ![image-transfer-UI](https://github.com/eagle9527/image-transfer2/blob/main/image-transfer-UI.png?raw=true)
 
 `image-transfer` 是一个docker镜像迁移工具，用于对不同镜像仓库的镜像进行批量迁移。
