@@ -19,7 +19,7 @@ go run cmd/image-transfer/main.go
 2. websocket实时回显推送详细日志。
 3. 历史日志清理。
 ```
-![image-transfer-UI](https://github.com/eagle9527/image-transfer2/blob/main/image-transfer-UI.png?raw=true)
+![image](./docs/image-transfer-UI.png)
 
 `image-transfer` 是一个docker镜像迁移工具，用于对不同镜像仓库的镜像进行批量迁移。
 
