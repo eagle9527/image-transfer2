@@ -65,7 +65,7 @@ func NewImageSource(registry, repository, tag, username, password string, insecu
 	if insecure {
 		// destinatoin registry is http service
 		sysctx = &types.SystemContext{
-			DockerInsecureSkipTLSVerify: types.OptionalBoolFalse,
+			DockerInsecureSkipTLSVerify: types.OptionalBoolTrue,
 		}
 	} else {
 		sysctx = &types.SystemContext{}
